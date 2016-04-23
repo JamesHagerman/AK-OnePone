@@ -50,6 +50,8 @@
 /* OPPO 2013-10-24 yxq Add end */
 #define INT_DEBOUNCE_MSEC	10
 
+#define DISABLE_PWM_MODE 1
+
 static struct lm3630_chip_data *lm3630_pchip;
 
 struct lm3630_chip_data {
@@ -65,6 +67,10 @@ struct lm3630_chip_data {
 
 #ifdef CONFIG_MACH_OPPO
 static int pre_brightness=0;
+#endif
+
+#if DISABLE_PWM_MODE
+static bool pwm_mode_off;
 #endif
 
 /* initialize chip */
@@ -250,6 +256,14 @@ static int lm3630_intr_config(struct lm3630_chip_data *pchip)
 #endif /* CONFIG_MACH_OPPO */
 		if (ret < 0)
 			goto out;
+
+#if DISABLE_PWM_MODE
+	if (!pwm_mode_off) {
+		pwm_mode_off = true;
+		regmap_update_bits(pchip->regmap, REG_CONFIG, 0x01, 0x00);
+	}
+#endif
+
 	return bl_level;
 out:
 	dev_err(pchip->dev, "i2c failed to access REG_CTRL\n");
@@ -473,9 +487,6 @@ static int lm3630_probe(struct i2c_client *client,
 	}
 /* OPPO zhanglong add 2013-08-30 for ftm test LCD backlight end */
 #endif //CONFIG_MACH_OPPO
-
-	/* Always enable PWM mode */
-	regmap_update_bits(lm3630_pchip->regmap, REG_CONFIG, 0x01, 0x01);
 
 	return 0;
 
